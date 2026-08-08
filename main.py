@@ -26,8 +26,8 @@ def generate_live_news():
        - Do NOT include any intro, outro, commentary, or meta-text. Return strictly the post text.
     """
     
-    # কোটা লিমিটের জন্য একের অধিক ব্যাকআপ মডেল ব্যবহার
-    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite']
+    # সঠিক মডেলের নামসমূহ
+    models_to_try = ['gemini-2.0-flash', 'gemini-1.5-pro']
     
     for model_name in models_to_try:
         try:
@@ -42,7 +42,7 @@ def generate_live_news():
             time.sleep(2)
             continue
             
-    raise RuntimeError("❌ All Gemini models failed due to API limits.")
+    raise RuntimeError("❌ All Gemini models failed. Check your API key or Quota.")
 
 def post_to_facebook(message):
     print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
