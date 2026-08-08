@@ -1,15 +1,21 @@
 import os
 import requests
 
-# Secrets
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 FACEBOOK_PAGE_ACCESS_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
-# Facebook Page ID
 PAGE_ID = "957930724066023"
 
+# API Key লোড হচ্ছে কিনা চেক
+if not GROQ_API_KEY:
+    raise ValueError("❌ GROQ_API_KEY is missing in GitHub Secrets!")
+
+# কি-এর প্রথম ও শেষ অংশ প্রিন্ট করে রিভিল করা (সুরক্ষিতভাবে)
+cleaned_key = GROQ_API_KEY.strip()
+print(f"🔑 Key detected! Starts with: {cleaned_key[:5]}... Ends with: {cleaned_key[-4:]}")
+
 def generate_live_news():
-    print("🤖 Generating real-time latest tech news post using Groq (Llama 3)...")
+    print("🤖 Generating real-time latest tech news post using Groq...")
     prompt = """
     Write an engaging, highly professional, and authentic Facebook news post in Bengali for a news page named "CN Bangla".
     Topic: Focus on the absolute latest trending technology news, recent gadget launches, or AI/software updates.
@@ -25,7 +31,7 @@ def generate_live_news():
     
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Authorization": f"Bearer {cleaned_key}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -42,7 +48,7 @@ def generate_live_news():
     if response.status_code == 200:
         return res_data['choices'][0]['message']['content']
     else:
-        print("❌ Groq API Error:", res_data)
+        print("❌ Groq API Error Details:", res_data)
         raise RuntimeError(f"Groq API Error: {res_data}")
 
 def post_to_facebook(message):
