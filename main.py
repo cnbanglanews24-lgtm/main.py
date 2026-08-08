@@ -1,18 +1,15 @@
 import os
-import time
 import requests
-from google import genai
-from google.genai.errors import APIError
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+# Secrets
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 FACEBOOK_PAGE_ACCESS_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
+# Facebook Page ID
 PAGE_ID = "957930724066023"
 
-client = genai.Client(api_key=GEMINI_API_KEY)
-
 def generate_live_news():
-    print("🤖 Generating real-time latest tech news post...")
+    print("🤖 Generating real-time latest tech news post using Groq (Llama 3)...")
     prompt = """
     Write an engaging, highly professional, and authentic Facebook news post in Bengali for a news page named "CN Bangla".
     Topic: Focus on the absolute latest trending technology news, recent gadget launches, or AI/software updates.
@@ -26,23 +23,27 @@ def generate_live_news():
        - Do NOT include any intro, outro, commentary, or meta-text. Return strictly the post text.
     """
     
-    # নতুন SDK-তে সমর্থিত মডেল তালিকা
-    models_to_try = ['gemini-2.0-flash', 'gemini-2.5-flash']
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "llama-3.3-70b-versatile",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.7
+    }
     
-    for model_name in models_to_try:
-        try:
-            print(f"🔄 Trying model: {model_name}...")
-            response = client.models.generate_content(
-                model=model_name,
-                contents=prompt,
-            )
-            return response.text
-        except APIError as e:
-            print(f"⚠️ Model {model_name} failed: {e.message}")
-            time.sleep(2)
-            continue
-            
-    raise RuntimeError("❌ All Gemini models failed. Check your API key or Quota.")
+    response = requests.post(url, headers=headers, json=payload)
+    res_data = response.json()
+    
+    if response.status_code == 200:
+        return res_data['choices'][0]['message']['content']
+    else:
+        print("❌ Groq API Error:", res_data)
+        raise RuntimeError(f"Groq API Error: {res_data}")
 
 def post_to_facebook(message):
     print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
