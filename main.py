@@ -5,6 +5,9 @@ from google import genai
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 FACEBOOK_PAGE_ACCESS_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
+# আপনার CN Bangla পেজের নির্দিষ্ট ID
+PAGE_ID = "957930724066023"
+
 client = genai.Client(api_key=GEMINI_API_KEY)
 
 def generate_live_news():
@@ -28,25 +31,27 @@ def generate_live_news():
     return response.text
 
 def post_to_facebook(message):
-    print("📤 Publishing live post to Facebook Page...")
-    url = "https://graph.facebook.com/v20.0/me/feed"
+    print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
+    
+    url = f"https://graph.facebook.com/v20.0/{PAGE_ID}/feed"
     payload = {
         'message': message,
         'access_token': FACEBOOK_PAGE_ACCESS_TOKEN
     }
     response = requests.post(url, data=payload)
+    res_data = response.json()
+    
     if response.status_code == 200:
-        print("✅ Success! Live post published successfully.")
-        print("Post ID:", response.json().get('id'))
+        print("✅ Success! Live post published successfully to CN Bangla.")
+        print("Post ID:", res_data.get('id'))
     else:
-        print("❌ Failed to publish post:", response.json())
+        print("❌ Facebook API Error Details:")
+        print(res_data)
+        raise RuntimeError(f"Facebook Post Failed: {res_data}")
 
 if __name__ == "__main__":
-    try:
-        news_content = generate_live_news()
-        print("\n--- Generated News Content ---")
-        print(news_content)
-        print("------------------------------\n")
-        post_to_facebook(news_content)
-    except Exception as e:
-        print("❌ Error during execution:", e)
+    news_content = generate_live_news()
+    print("\n--- Generated News Content ---")
+    print(news_content)
+    print("------------------------------\n")
+    post_to_facebook(news_content)
