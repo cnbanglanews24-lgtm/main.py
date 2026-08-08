@@ -1,11 +1,12 @@
 import os
+import time
 import requests
 from google import genai
+from google.genai.errors import APIError
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 FACEBOOK_PAGE_ACCESS_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
-# আপনার CN Bangla পেজের নির্দিষ্ট ID
 PAGE_ID = "957930724066023"
 
 client = genai.Client(api_key=GEMINI_API_KEY)
@@ -24,11 +25,24 @@ def generate_live_news():
        - Include 4-5 relevant hashtags (e.g., #CNBangla #TechNews #LatestUpdate).
        - Do NOT include any intro, outro, commentary, or meta-text. Return strictly the post text.
     """
-    response = client.models.generate_content(
-        model='gemini-2.0-flash',
-        contents=prompt,
-    )
-    return response.text
+    
+    # কোটা লিমিটের জন্য একের অধিক ব্যাকআপ মডেল ব্যবহার
+    models_to_try = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash-lite']
+    
+    for model_name in models_to_try:
+        try:
+            print(f"🔄 Trying model: {model_name}...")
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+            )
+            return response.text
+        except APIError as e:
+            print(f"⚠️ Model {model_name} failed: {e.message}")
+            time.sleep(2)
+            continue
+            
+    raise RuntimeError("❌ All Gemini models failed due to API limits.")
 
 def post_to_facebook(message):
     print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
