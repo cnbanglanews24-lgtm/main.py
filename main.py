@@ -1,18 +1,30 @@
 import os
 import requests
 
+# Secrets
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-FACEBOOK_PAGE_ACCESS_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
+FACEBOOK_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
+# Page Details
 PAGE_ID = "957930724066023"
 
-# API Key লোড হচ্ছে কিনা চেক
-if not GROQ_API_KEY:
-    raise ValueError("❌ GROQ_API_KEY is missing in GitHub Secrets!")
-
-# কি-এর প্রথম ও শেষ অংশ প্রিন্ট করে রিভিল করা (সুরক্ষিতভাবে)
-cleaned_key = GROQ_API_KEY.strip()
-print(f"🔑 Key detected! Starts with: {cleaned_key[:5]}... Ends with: {cleaned_key[-4:]}")
+def get_page_access_token(user_or_page_token):
+    """
+    যদি ইনপুট টোকেনটি User Token হয়ে থাকে, 
+    তবে এটি অটোমেটিক আসল Page Access Token খুঁজে বের করবে।
+    """
+    url = f"https://graph.facebook.com/v20.0/me/accounts?access_token={user_or_page_token}"
+    response = requests.get(url)
+    res_data = response.json()
+    
+    if "data" in res_data:
+        for page in res_data["data"]:
+            if page.get("id") == PAGE_ID:
+                print("🔑 Successfully converted to Page Access Token!")
+                return page.get("access_token")
+    
+    # যদি আগে থেকেই Page Token দেওয়া থাকে বা me/accounts এ না পাওয়া যায়
+    return user_or_page_token
 
 def generate_live_news():
     print("🤖 Generating real-time latest tech news post using Groq...")
@@ -31,7 +43,7 @@ def generate_live_news():
     
     url = "https://api.groq.com/openai/v1/chat/completions"
     headers = {
-        "Authorization": f"Bearer {cleaned_key}",
+        "Authorization": f"Bearer {GROQ_API_KEY.strip()}",
         "Content-Type": "application/json"
     }
     payload = {
@@ -48,16 +60,19 @@ def generate_live_news():
     if response.status_code == 200:
         return res_data['choices'][0]['message']['content']
     else:
-        print("❌ Groq API Error Details:", res_data)
+        print("❌ Groq API Error:", res_data)
         raise RuntimeError(f"Groq API Error: {res_data}")
 
 def post_to_facebook(message):
+    # টোকেন অটো-কনভার্ট
+    page_token = get_page_access_token(FACEBOOK_TOKEN)
+    
     print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
     
     url = f"https://graph.facebook.com/v20.0/{PAGE_ID}/feed"
     payload = {
         'message': message,
-        'access_token': FACEBOOK_PAGE_ACCESS_TOKEN
+        'access_token': page_token
     }
     response = requests.post(url, data=payload)
     res_data = response.json()
