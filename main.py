@@ -26,8 +26,8 @@ def generate_live_news():
        - Do NOT include any intro, outro, commentary, or meta-text. Return strictly the post text.
     """
     
-    # সঠিক মডেলের নামসমূহ
-    models_to_try = ['gemini-2.0-flash', 'gemini-1.5-pro']
+    # নতুন SDK-তে সমর্থিত মডেল তালিকা
+    models_to_try = ['gemini-2.0-flash', 'gemini-2.5-flash']
     
     for model_name in models_to_try:
         try:
