@@ -1,30 +1,31 @@
 import os
 import requests
 
-# Secrets
+# Secrets from GitHub
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 FACEBOOK_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
-# Page Details
-PAGE_ID = "957930724066023"
-
-def get_page_access_token(user_or_page_token):
+def get_page_credentials(token):
     """
-    যদি ইনপুট টোকেনটি User Token হয়ে থাকে, 
-    তবে এটি অটোমেটিক আসল Page Access Token খুঁজে বের করবে।
+    ইউজার টোকেন বা যেকোনো পেজ এক্সেস টোকেন থেকে
+    স্বয়ংক্রিয়ভাবে প্রথম পেজের PAGE_ID এবং PAGE_ACCESS_TOKEN খুঁজে বের করে।
     """
-    url = f"https://graph.facebook.com/v20.0/me/accounts?access_token={user_or_page_token}"
+    url = f"https://graph.facebook.com/v20.0/me/accounts?access_token={token.strip()}"
     response = requests.get(url)
     res_data = response.json()
     
-    if "data" in res_data:
-        for page in res_data["data"]:
-            if page.get("id") == PAGE_ID:
-                print("🔑 Successfully converted to Page Access Token!")
-                return page.get("access_token")
-    
-    # যদি আগে থেকেই Page Token দেওয়া থাকে বা me/accounts এ না পাওয়া যায়
-    return user_or_page_token
+    if "data" in res_data and len(res_data["data"]) > 0:
+        page = res_data["data"][0] # প্রথম পেজটি স্বয়ংক্রিয়ভাবে নিয়ে নেবে
+        page_id = page.get("id")
+        page_token = page.get("access_token")
+        print(f"🔑 Page ID automatically detected: {page_id}")
+        return page_id, page_token
+    else:
+        # যদি টোকেনটি আগে থেকেই সরাসরি পেজ টোকেন হয়ে থাকে
+        print("⚠️ Could not fetch page list, using direct token/me endpoint.")
+        me_url = f"https://graph.facebook.com/v20.0/me?access_token={token.strip()}"
+        me_res = requests.get(me_url).json()
+        return me_res.get("id"), token
 
 def generate_live_news():
     print("🤖 Generating real-time latest tech news post using Groq...")
@@ -64,12 +65,12 @@ def generate_live_news():
         raise RuntimeError(f"Groq API Error: {res_data}")
 
 def post_to_facebook(message):
-    # টোকেন অটো-কনভার্ট
-    page_token = get_page_access_token(FACEBOOK_TOKEN)
+    # PAGE_ID এবং Token স্বয়ংক্রিয়ভাবে এক্সট্র্যাক্ট করা হচ্ছে
+    page_id, page_token = get_page_credentials(FACEBOOK_TOKEN)
     
-    print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
+    print(f"📤 Publishing live post to Page ID: {page_id}...")
     
-    url = f"https://graph.facebook.com/v20.0/{PAGE_ID}/feed"
+    url = f"https://graph.facebook.com/v20.0/{page_id}/feed"
     payload = {
         'message': message,
         'access_token': page_token
@@ -78,7 +79,7 @@ def post_to_facebook(message):
     res_data = response.json()
     
     if response.status_code == 200:
-        print("✅ Success! Live post published successfully to CN Bangla.")
+        print("✅ Success! Live post published successfully to Facebook Page.")
         print("Post ID:", res_data.get('id'))
     else:
         print("❌ Facebook API Error Details:")
