@@ -5,27 +5,8 @@ import requests
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 FACEBOOK_TOKEN = os.getenv("FACEBOOK_PAGE_ACCESS_TOKEN")
 
-def get_page_credentials(token):
-    """
-    ইউজার টোকেন বা যেকোনো পেজ এক্সেস টোকেন থেকে
-    স্বয়ংক্রিয়ভাবে প্রথম পেজের PAGE_ID এবং PAGE_ACCESS_TOKEN খুঁজে বের করে।
-    """
-    url = f"https://graph.facebook.com/v20.0/me/accounts?access_token={token.strip()}"
-    response = requests.get(url)
-    res_data = response.json()
-    
-    if "data" in res_data and len(res_data["data"]) > 0:
-        page = res_data["data"][0] # প্রথম পেজটি স্বয়ংক্রিয়ভাবে নিয়ে নেবে
-        page_id = page.get("id")
-        page_token = page.get("access_token")
-        print(f"🔑 Page ID automatically detected: {page_id}")
-        return page_id, page_token
-    else:
-        # যদি টোকেনটি আগে থেকেই সরাসরি পেজ টোকেন হয়ে থাকে
-        print("⚠️ Could not fetch page list, using direct token/me endpoint.")
-        me_url = f"https://graph.facebook.com/v20.0/me?access_token={token.strip()}"
-        me_res = requests.get(me_url).json()
-        return me_res.get("id"), token
+# CN Bangla Page ID (হুবহু এই আইডিটি থাকবে)
+PAGE_ID = "957930724066023"
 
 def generate_live_news():
     print("🤖 Generating real-time latest tech news post using Groq...")
@@ -65,21 +46,18 @@ def generate_live_news():
         raise RuntimeError(f"Groq API Error: {res_data}")
 
 def post_to_facebook(message):
-    # PAGE_ID এবং Token স্বয়ংক্রিয়ভাবে এক্সট্র্যাক্ট করা হচ্ছে
-    page_id, page_token = get_page_credentials(FACEBOOK_TOKEN)
+    print(f"📤 Publishing live post directly to Page ID: {PAGE_ID}...")
     
-    print(f"📤 Publishing live post to Page ID: {page_id}...")
-    
-    url = f"https://graph.facebook.com/v20.0/{page_id}/feed"
+    url = f"https://graph.facebook.com/v20.0/{PAGE_ID}/feed"
     payload = {
         'message': message,
-        'access_token': page_token
+        'access_token': FACEBOOK_TOKEN.strip()
     }
     response = requests.post(url, data=payload)
     res_data = response.json()
     
     if response.status_code == 200:
-        print("✅ Success! Live post published successfully to Facebook Page.")
+        print("✅ Success! Live post published successfully to CN Bangla.")
         print("Post ID:", res_data.get('id'))
     else:
         print("❌ Facebook API Error Details:")
